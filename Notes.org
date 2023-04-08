@@ -1,0 +1,68 @@
+#+TITLE: Testing the Lifx LAN API
+
+* Notes
+- Use WireShark to inspect the packets being sent over the network.
+- All messages use little endian
+- Any reserved fields are meant to be all 0's when sending and are garbage (to me) when recieving
+
+* Messages
+** Get Service Message
+Broadcasts a GetService(2) Message
+*** Source
+| Field                | Value (int) | Size (bits) | Value (bin)                                                             |
+|----------------------+-------------+-------------+-------------------------------------------------------------------------|
+| Size                 |          36 |          16 | 00000000 00100100                                                       |
+| Protocol             |        1024 |          12 | 0100 00000000                                                           |
+| Addressable          |           1 |           1 | 1                                                                       |
+| Tagged               |           1 |           1 | 1                                                                       |
+| Origin               |           0 |           2 | 00                                                                      |
+| Source               |           2 |          32 | 00000000 00000000 00000000 00000010                                     |
+| Target               |           0 |          64 | 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 |
+| Reserved             |           0 |          48 | 00000000 00000000 00000000 00000000 00000000 00000000                   |
+| Response Required    |           0 |           1 | 0                                                                       |
+| Acknowledge Required |           0 |           1 | 1                                                                       |
+| Reserved             |           0 |           6 | 000000                                                                  |
+| Sequence             |           1 |           8 | 00000001                                                                |
+| Reserved             |           0 |          64 | 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 |
+| Type                 |           2 |          16 | 00000000 00000010                                                       |
+| Reserved             |           0 |          16 | 00000000 00000000                                                       |
+
+
+*** Command
+#+BEGIN_SRC bash
+echo -ne "\x24\x00\x00\x34\x00\x00\x02\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01\x03\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\x00\x00" | nc -b -u 192.168.1.255 56700
+#+END_SRC
+
+*** Response
+The Response sends a StateService(3) Message
+#+BEGIN_SRC bash
+"\x29\x00\x00\x14\x00\x00\x02\x00\xd0\x73\xd5\x30\x9d\x57\x00\x00\x4c\x49\x46\x58\x56\x32\x01\x02\x10\x51\x03\xe9\xbf\x01\x00\x00\x03\x00\x00\x00\x01\x7c\xdd\x00\x00"
+#+END_SRC
+
+**** Decoded Response
+**Header**
+| Field                |        Value | Meaning                                                              |
+|----------------------+--------------+----------------------------------------------------------------------|
+| Size                 |           41 | The Whole length of the message is 41 bytes encoded in little endian |
+| Protocol             |         1024 | Must always be 1024                                                  |
+| Addressable          |            1 | Must always be 1                                                     |
+| Tagged               |            0 | 0 means that this is not a broadcast message                         |
+| Origin               |           00 | Must always be 0                                                     |
+| Source               |            2 | The source of the sending message should match this                  |
+| Target               | d073d5309d57 | Serial Number of the Device that is sending the message              |
+| Reserved             |            0 | Reserved Space                                                       |
+| Reponse Required     |            0 | Response NOT Required                                                |
+| Acknowledge Required |            1 | Acknowledge Required                                                 |
+| Sequence             |            2 | The sequence of the messages sent (increments every time)            |
+| Reserved             |            0 | Reserved Space                                                       |
+| Type                 |            3 | The Type of message is a StateService(3)                             |
+| Reserved             |            0 | Reserved Space                                                       |
+
+**Payload**
+| Field   | Value | Meaning                      |
+|---------+-------+------------------------------|
+| Service |     1 | Using UDP                    |
+| Port    | 56700 | The Port to communicate over |
+
+* Sources
+https://lan.developer.lifx.com/docs/packet-contents
