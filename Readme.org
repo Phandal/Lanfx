@@ -3,4 +3,4 @@
 
 Lanfx is something I am working on to communicate with my Lifx devices with their LAN API instead of the REST API. I am using this project to learn a bit about networking and concurrency in C.
 
-[Here](https://lan.developer.lifx.com/docs/packet-contents) is the Documentation.
+[[https://lan.developer.lifx.com/docs/packet-contents][Here]] is the Documentation.
