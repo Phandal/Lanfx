@@ -4,10 +4,11 @@
 - Use WireShark to inspect the packets being sent over the network.
 - All messages use little endian
 - Any reserved fields are meant to be all 0's when sending and are garbage (to me) when recieving
+- All colors are represented in HSBK format
 
 * Messages
-** Get Service Message
-Broadcasts a GetService(2) Message
+** GetService(2)
+Used for device discovery on the network.
 *** Source
 | Field                | Value (int) | Size (bits) | Value (bin)                                                             |
 |----------------------+-------------+-------------+-------------------------------------------------------------------------|
@@ -27,16 +28,15 @@ Broadcasts a GetService(2) Message
 | Type                 |           2 |          16 | 00000000 00000010                                                       |
 | Reserved             |           0 |          16 | 00000000 00000000                                                       |
 
-
 *** Command
 #+BEGIN_SRC bash
-echo -ne "\x24\x00\x00\x34\x00\x00\x02\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01\x03\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\x00\x00" | nc -b -u 192.168.1.255 56700
+echo -ne "\x24\x00\x00\x34\x02\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01\x03\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\x00\x00" | nc -b -u {UDP_BROADCAST_IP} 56700
 #+END_SRC
 
 *** Response
 The Response sends a StateService(3) Message
 #+BEGIN_SRC bash
-"\x29\x00\x00\x14\x00\x00\x02\x00\xd0\x73\xd5\x30\x9d\x57\x00\x00\x4c\x49\x46\x58\x56\x32\x01\x02\x10\x51\x03\xe9\xbf\x01\x00\x00\x03\x00\x00\x00\x01\x7c\xdd\x00\x00"
+"\x29\x00\x00\x14\x00\x00\x02\x00\xd0\x73\xd5\x30\x9d\x57\x00\x00\x4c\x49\x46\x58\x56\x32\x01\x03\x10\x51\x03\xe9\xbf\x01\x00\x00\x03\x00\x00\x00\x01\x7c\xdd\x00\x00"
 #+END_SRC
 
 **** Decoded Response
@@ -51,9 +51,9 @@ The Response sends a StateService(3) Message
 | Source               |            2 | The source of the sending message should match this                  |
 | Target               | d073d5309d57 | Serial Number of the Device that is sending the message              |
 | Reserved             |            0 | Reserved Space                                                       |
-| Reponse Required     |            0 | Response NOT Required                                                |
+| Reponse Required     |            1 | Response Required                                                    |
 | Acknowledge Required |            1 | Acknowledge Required                                                 |
-| Sequence             |            2 | The sequence of the messages sent (increments every time)            |
+| Sequence             |            1 | The sequence of the messages sent (increments every time)            |
 | Reserved             |            0 | Reserved Space                                                       |
 | Type                 |            3 | The Type of message is a StateService(3)                             |
 | Reserved             |            0 | Reserved Space                                                       |
@@ -64,5 +64,129 @@ The Response sends a StateService(3) Message
 | Service |     1 | Using UDP                    |
 | Port    | 56700 | The Port to communicate over |
 
+** SetColor(102)
+Used to set the color of the device
+*** Source
+**Header**
+| Field                |  Value (int) | Size (bits) | Value (bin)                                                               |
+|----------------------+--------------+-------------+---------------------------------------------------------------------------|
+| Size                 |           49 |          16 | 00000000 00110001                                                         |
+| Protocol             |         1024 |          12 | 0100 00000000                                                             |
+| Addressable          |            1 |           1 | 1                                                                         |
+| Tagged               |            0 |           1 | 0                                                                         |
+| Origin               |            0 |           2 | 00                                                                        |
+| Source               |            2 |          32 | 00000000 00000000 00000000 00000010                                       |
+| Target               | d073d5309d57 |          64 | This is the same value in hex (literally that string in the value column) |
+| Reserved             |            0 |          48 | 00000000 00000000 00000000 00000000 00000000 00000000                     |
+| Response Required    |            0 |           0 | 0                                                                         |
+| Acknowledge Required |            1 |           1 | 1                                                                         |
+| Reserved             |            0 |           6 | 000000                                                                    |
+| Sequence             |            1 |           8 | 00000001                                                                  |
+| Reserved             |            0 |          64 | 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000   |
+| Type                 |          102 |          16 | 00000000 01100110                                                        |
+| Reserved             |            0 |          16 | 00000000 00000000                                                         |
+
+**Payload**
+| Field      | Value (int) | Size (bits) | Value (bin)       |
+|------------+-------------+-------------+-------------------|
+| Reserved   |           1 |           8 | 00000000          |
+| Hue        |         120 |          16 | 01010101 01010101 |
+| Saturation |         100 |          16 | 11111111 11111111 |
+| Brightness |         100 |          16 | 11111111 11111111 |
+| Kelvin     |        3500 |          16 | 00001101 10101100 |
+| Duration   |           0 |          32 | 00000000 00000000 00000000 00000000 |
+
+*** Command
+#+BEGIN_SRC bash
+echo -n -e "\x31\x00\x00\x14\x02\x00\x00\x00\xd0\x73\xd5\x30\x9d\x57\x00\x00\x00\x00\x00\x00\x00\x00\x02\x01\x00\x00\x00\x00\x00\x00\x00\x00\x66\x00\x00\x00\x00\x55\x55\xff\xff\xff\xff\xac\x0d\x00\x00\x00\x00" | nc -b -u {DEVICE_IP} 56700
+#+END_SRC
+
+*** Response
+Depending on the ~Response Required~ field in the header the response will either be a Acknowledge(45) or a LightState(107)
+**** Response Not Required (Acknowledge(45))
+#+BEGIN_SRC bash
+"\x24\x00\x00\x14\x02\x00\x00\x00\xd0\x73\xd5\x30\x9d\x57\x00\x00\x4c\x49\x46\x58\x56\x32\x00\x01\x78\x77\x14\x59\x85\x04\x00\x00\x2d\x00\x00\x00"
+#+END_SRC
+***** Decoded Response
+**Header**
+| Field                |        Value | Meaning                                                              |
+|----------------------+--------------+----------------------------------------------------------------------|
+| Size                 |           36 | The Whole length of the message is 41 bytes encoded in little endian |
+| Protocol             |         1024 | Must always be 1024                                                  |
+| Addressable          |            1 | Must always be 1                                                     |
+| Tagged               |            0 | 0 means that this is not a broadcast message                         |
+| Origin               |           00 | Must always be 0                                                     |
+| Source               |            2 | The source of the sending message should match this                  |
+| Target               | d073d5309d57 | Serial Number of the Device that is sending the message              |
+| Reserved             |            0 | Reserved Space                                                       |
+| Reponse Required     |            0 | Response NOT Required                                                |
+| Acknowledge Required |            0 | Acknowledge NOT Required                                             |
+| Sequence             |            1 | The sequence of the messages sent (increments every time)            |
+| Reserved             |            0 | Reserved Space                                                       |
+| Type                 |           45 | The Type of message is a Acknowledgement(45)                         |
+| Reserved             |            0 | Reserved Space                                                       |
+
+**** Response Required (LightState(107))
+#+BEGIN_SRC bash
+"\x58\x00\x00\x14\x02\x00\x00\x00\xd0\x73\xd5\x30\x9d\x57\x00\x00\x4c\x49\x46\x58\x56\x32\x01\x01\x00\xdc\xd9\x87\x06\x07\x00\x00\x6b\x00\x00\x00\x62\x8a\xff\xff\xff\xff\xac\x0d\x00\x00\xff\xff\x4c\x61\x6d\x70\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+#+END_SRC
+***** Decoded Response
+**Header**
+| Field                |        Value | Meaning                                                              |
+|----------------------+--------------+----------------------------------------------------------------------|
+| Size                 |           88 | The Whole length of the message is 41 bytes encoded in little endian |
+| Protocol             |         1024 | Must always be 1024                                                  |
+| Addressable          |            1 | Must always be 1                                                     |
+| Tagged               |            0 | 0 means that this is not a broadcast message                         |
+| Origin               |           00 | Must always be 0                                                     |
+| Source               |            2 | The source of the sending message should match this                  |
+| Target               | d073d5309d57 | Serial Number of the Device that is sending the message              |
+| Reserved             |            0 | Reserved Space                                                       |
+| Reponse Required     |            1 | Response Required                                                    |
+| Acknowledge Required |            0 | Acknowledge NOT Required                                             |
+| Sequence             |            1 | The sequence of the messages sent (increments every time)            |
+| Reserved             |            0 | Reserved Space                                                       |
+| Type                 |          107 | The Type of message is a Acknowledgement(45)                         |
+| Reserved             |            0 | Reserved Space                                                       |
+
+**Payload**
+| Field      | Value | Meaning                               |
+|------------+-------+---------------------------------------|
+| Hue        | 35426 | The Color Hue                         |
+| Saturation | 65535 | The Color Saturation                  |
+| Brightness | 65535 | The Color Brightness                  |
+| Kelvin     |  3500 | The Color Kelvin                      |
+| Power      | 65535 | The current power level of the device |
+| Label      |  Lamp | The current label on the device       |
+
 * Sources
 https://lan.developer.lifx.com/docs/packet-contents
+
+* HSBK Color Translation Formulas
+HSBK stands for:
+- Hue: The section of the color spectrum that represents the color of the device. e.x. red is 0 and green is 120 max is 360
+- Saturation: How strong the color is. e.x. 0 is white and 1 is full color
+- Brightness: HOw bright the olor is. e.x. 0 is off and 1 is full brightness
+- Kelvin: The temperature when the device has zero saturation. e.x. a higher value is cooler white (more blue) and a lower value is a warmer white (more yello)
+
+Hue is represented with 0-360, while Saturation and Brightness are represented with 0-1. These values are represented by Uint16 with values between 0 and 65535. This means they need to be converted.
+Here are the conversion formulas from the documentation:
+#+BEGIN_SRC python
+
+  # From 0-360 to 0-65535
+  hue = 120
+  uint_hue = (int(round(0X10000 * hue) / 360)) % 0X10000
+
+  # From 0-65535 to 0-360
+  hue = rount(float(uint_hue) * 360 / 0X10000, 2)
+
+  # From 0-1 to 0-65535
+  saturation = 0.5
+  uint_saturation = int(round(0XFFFF * saturation))
+
+  # From 0-65535 to 0-1
+  saturation = round(float(uint_saturation) / 0XFFFF, 4)
+  
+#+END_SRC
+Kelvin can be used as the number it is. One thing to note is that not all products support the full range of kelvin values. To find the supported ranges per product, go [[https://lan.developer.lifx.com/docs/product-registry][Here]].
+
