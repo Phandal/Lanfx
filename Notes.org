@@ -20,10 +20,10 @@ Used for device discovery on the network.
 | Source               |           2 |          32 | 00000000 00000000 00000000 00000010                                     |
 | Target               |           0 |          64 | 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 |
 | Reserved             |           0 |          48 | 00000000 00000000 00000000 00000000 00000000 00000000                   |
-| Response Required    |           0 |           1 | 0                                                                       |
-| Acknowledge Required |           0 |           1 | 1                                                                       |
+| Response Required    |           1 |           1 | 1                                                                       |
+| Acknowledge Required |           0 |           1 | 0                                                                       |
 | Reserved             |           0 |           6 | 000000                                                                  |
-| Sequence             |           1 |           8 | 00000001                                                                |
+| Sequence             |           3 |           8 | 00000011                                                                |
 | Reserved             |           0 |          64 | 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 |
 | Type                 |           2 |          16 | 00000000 00000010                                                       |
 | Reserved             |           0 |          16 | 00000000 00000000                                                       |
@@ -48,12 +48,12 @@ The Response sends a StateService(3) Message
 | Addressable          |            1 | Must always be 1                                                     |
 | Tagged               |            0 | 0 means that this is not a broadcast message                         |
 | Origin               |           00 | Must always be 0                                                     |
-| Source               |            2 | The source of the sending message should match this                  |
+| Source               |       131072 | The source of the sending message should match this                  |
 | Target               | d073d5309d57 | Serial Number of the Device that is sending the message              |
 | Reserved             |            0 | Reserved Space                                                       |
 | Reponse Required     |            1 | Response Required                                                    |
-| Acknowledge Required |            1 | Acknowledge Required                                                 |
-| Sequence             |            1 | The sequence of the messages sent (increments every time)            |
+| Acknowledge Required |            0 | Acknowledge NOT Required                                             |
+| Sequence             |            3 | The sequence of the messages sent (increments every time)            |
 | Reserved             |            0 | Reserved Space                                                       |
 | Type                 |            3 | The Type of message is a StateService(3)                             |
 | Reserved             |            0 | Reserved Space                                                       |
