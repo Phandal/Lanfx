@@ -1,5 +1,6 @@
 **/a.out
 **/*.o
-frame_decode
-tags
+src/frame_decode
+src/frame_encode
+src/tags
 
